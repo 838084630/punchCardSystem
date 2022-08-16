@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.demo.mapper.UserMapper">
+
+    <update id="updateRecord">
+        update attendance.record
+        <set>
+            <if test="punchInTime != null">punch_in_time = #{punchInTime},</if>
+            <if test="punchOutTime != null">punch_out_time = #{punchOutTime}</if>
+        </set>
+        where id = #{id}
+    </update>
+
+    <insert id="createRecord">
+        insert into attendance.record(username,punch_in_time,punch_out_time)
+        values(#{username},#{punchInTime},#{punchOutTime})
+    </insert>
+
+</mapper>
