@@ -5,6 +5,8 @@ import com.example.demo.pojo.User;
 import org.apache.ibatis.annotations.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Mapper
 public interface UserMapper {
@@ -24,4 +26,8 @@ public interface UserMapper {
     long updateRecord(@Param("id") Integer id, @Param("punchInTime") LocalDateTime punchInTime, @Param("punchOutTime") LocalDateTime punchOutTime);
 
     long createRecord(@Param("username") String username, @Param("punchInTime") LocalDateTime in, @Param("punchOutTime") LocalDateTime out);
+
+    List<Integer> getAbsenceRecord(@Param("username") String username, @Param("newDate") ArrayList<String> newDate);
+
+    long getDay(String day);
 }

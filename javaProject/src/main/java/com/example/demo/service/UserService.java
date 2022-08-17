@@ -9,13 +9,14 @@ import com.example.demo.utils.Base64Util;
 import com.example.demo.utils.DateUtil;
 import com.example.demo.utils.TokenUtil;
 import org.apache.commons.lang.StringUtils;
+import org.apache.ibatis.binding.BindingException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 @Service
 public class UserService {
@@ -78,6 +79,54 @@ public class UserService {
         }
         return build;
     }
+
+
+    public Res<?> getAbsenceRecord(String username, String time, Integer days) {
+        Calendar now = Calendar.getInstance();
+        int thisMonth = Integer.parseInt((now.get(Calendar.YEAR) + "-" + (now.get(Calendar.MONTH) + 1)).replace("-", ""));
+        if (thisMonth < Integer.parseInt(time.replace("-", ""))) {
+            build = Res.builder().code(Code.NOLOGIN_EXCEPTION).data(null).build();
+        }
+        ArrayList<String> dayList = new ArrayList<>();
+        for (int i = 1; i < days + 1; i++) {
+            dayList.add(dateUtil.newDate(time + "-" + i));
+        }
+        if (StringUtils.isNotEmpty(username) && StringUtils.isNotEmpty(time)) {
+            //一日の出勤と退勤の一つだけを入力しないのデータを検索する
+            List<Integer> record = userMapper.getAbsenceRecord(username, dayList);
+            //一日の出勤と退勤どれも入力しないデータを検索する
+            for (String day : dayList) {
+                try {
+                    userMapper.getDay(day);
+                } catch (BindingException e) {
+                    if (thisMonth == Integer.parseInt(time.replace("-", ""))) {
+                        //删掉上一个sql查出的今天未打卡记录
+                        for (int i = 0; i < record.size(); i++) {
+                            if (record.get(i) == now.get(Calendar.DAY_OF_MONTH)) {
+                                record.remove(i);
+                            }
+                        }
+                        //只放入今天之前的
+                        LocalDate queryData = LocalDate.parse(day, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+                        LocalDate today = LocalDate.parse(dateUtil.newDate(now.get(Calendar.YEAR) + "-" + (now.get(Calendar.MONTH) + 1) + "-" + now.get(Calendar.DAY_OF_MONTH)), DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+                        if (queryData.isBefore(today)) {
+                            record.add(Integer.valueOf(day.substring(8, 10)));
+                        }
+                    } else {
+                        record.add(Integer.valueOf(day.substring(8, 10)));
+                    }
+
+                }
+            }
+            record.stream().forEach(System.out::println);
+            //只放日期处理
+            build = Res.builder().code(Code.SUCCESS).data(record).build();
+        } else {
+            build = Res.builder().code(Code.NOLOGIN_EXCEPTION).data(null).build();
+        }
+        return build;
+    }
+
 
     private Map<String, LocalDateTime> timeFormat(LocalDateTime punchInTime, LocalDateTime punchOutTime) {
         HashMap<String, LocalDateTime> map = new HashMap<>();

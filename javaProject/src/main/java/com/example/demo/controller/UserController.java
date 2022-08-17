@@ -52,6 +52,7 @@ public class UserController {
 
     @GetMapping(value = "/record")
     public Res<?> getRecord(String username, String date){
+        System.out.println("******");
         Res<?> record = userService.getRecord(username, date);
         return record;
     }
@@ -60,4 +61,10 @@ public class UserController {
     public Res<?> writeRecord(@RequestBody Record record){
         return userService.writeRecord(record);
     }
+
+    @GetMapping(value = "/absence")
+    public Res<?> getAbsenceRecord(String username, String time, Integer days){
+        return userService.getAbsenceRecord(username,time,days);
+    }
+
 }

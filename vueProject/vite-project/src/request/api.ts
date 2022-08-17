@@ -43,8 +43,13 @@ interface Record{
     punchInTime:string;
     punchOutTime:string;
 }
+
+interface ThisYearAndMonth{
+    record:number[];
+}
 export const adminLoginApi = (data: AdminLoginData): PromiseRes<AdminLoginRes> => request.post('/user/login', data)
 export const userCheckApi = (data: NameAndtoken): PromiseRes<AdminLoginRes> => request.post('/user/userCheck', data)
 export const getAdminInfoApi = (): PromiseRes<AdminInfoRes> => request.get('/user/info')
 export const getRecordApi = (data:string,data2:string):PromiseRes<ManageResult<Record>> => request.get('/user/record?username='+data+'&date='+data2)
 export const punchCardApi = (data: Record): PromiseRes<OnlyCode> => request.post('/user/punchCard', data)
+export const getAbsenceApi = (data: string,data2:string,date3:number):PromiseRes<ManageResult<ThisYearAndMonth>> =>request.get('/user/absence?username='+data+'&time='+data2+'&days='+date3)

@@ -52,9 +52,12 @@
 
 <script lang="ts" setup>
 import { ref, onMounted, reactive } from 'vue'
-import { getRecordApi, punchCardApi } from '../../request/api'
+import { getRecordApi, punchCardApi, getAbsenceApi } from '../../request/api'
 import Cookie from 'js-cookie'
+import { useRouter } from 'vue-router';
+import { ElMessage } from 'element-plus'
 
+let router = useRouter();
 const dialogFormVisible = ref(false)
 const formLabelWidth = '100px'
 const form = reactive({
@@ -106,16 +109,18 @@ let resubmit: number[] = reactive([])
 let recordIndex: any;
 
 onMounted(() => {
-  //todo拿date请求后台，返回需要补卡的日期
-  resubmit.push(1, 2, 3)
+
   getNow();
 })
 const getNow = () => {
+  //todo拿date请求后台，返回需要补卡的日期
   year.value = String(now.value.getFullYear());
   month.value = String(now.value.getMonth() + 1);
   date.value = String(now.value.getDate());
   now.value.setDate(1);
   firstDay.value = String(now.value.getDay());
+  getAbsenceArr()
+
   initData();
 }
 function getMonthDay(month: number): any {
@@ -138,6 +143,7 @@ function getMonthDay(month: number): any {
 const initData = () => {
   data.value = [];
   let days = getMonthDay(Number(month.value));
+
   for (let i = 0; i < Number(firstDay.value); i++) {
     data.value.push({
       year: "",
@@ -159,8 +165,6 @@ const initData = () => {
 const lastMonth = () => {
   now.value.setMonth(now.value.getMonth() - 1);
   getNow();
-  // //todo拿date请求后台，返回需要补卡的日期
-  // resubmit.push(1, 2, 3)
 }
 const nextMonth = () => {
   now.value.setMonth(now.value.getMonth() + 1);
@@ -186,8 +190,6 @@ function compareToNow(item: any): any {
     } else if (date1.getTime() === now.getTime()) {
       return 0
     } else if (date1.getTime() < now.getTime()) {
-      // console.log(resubmit);
-      // console.log(item.month + "-" +item.date);
       if (resubmit.includes(item.date)) {
         return -2
         //需要补卡
@@ -215,8 +217,8 @@ function todo(item: any): any {
 
       }
       editStatusCheck(date)
-    } else {
-
+    } else if (res.code.value === 401) {
+      router.push('/login')
     }
   })
 }
@@ -245,16 +247,6 @@ const getpunchOutTime = () => {
 
 
 const submit = () => {
-  // if (form.punchin.trim() === '') {
-  // messageFlgIn.value = true;
-  // }
-  // if (form.punchin.trim() === '' && form.punchout.trim() === '') {
-  // messageFlgIn.value = true;
-  // messageFlgOut.value = true;
-  // }
-
-  // let punchInTime = !editStatusIn.value?form.punchin:null;
-  // let punchOutTime = !editStatusOut.value?form.punchout:null;
   let punchInTime = form.punchin;
   let punchOutTime = form.punchout;
   let record: any = {
@@ -266,7 +258,12 @@ const submit = () => {
 
   punchCardApi(record).then(res => {
     if (res.code.value === 200) {
-      console.log(res);
+      ElMessage({
+        message: '保存しました',
+        type: 'success',
+      })
+    } else if (res.code.value === 401) {
+      router.push('/login')
     }
     dialogFormVisible.value = false
   })
@@ -277,6 +274,24 @@ const submit = () => {
 //   messageFlgIn.value = false;
 //   messageFlgOut.value = false;
 // }
+
+function getAbsenceArr() {
+  let days = getMonthDay(Number(month.value));
+  console.log(year.value + '-' + month.value);
+  console.log(days);
+  console.log(resubmit);
+  resubmit.length=0
+  
+  getAbsenceApi(Cookie.get('username') || '', year.value + '-' + month.value, days).then(res => {
+    if (res.code.value == 200) { 
+      let xx:number[]= res.data;
+      for(let i of xx){
+        resubmit.push(i)
+      }
+    }
+  })
+
+}
 
 </script>
 

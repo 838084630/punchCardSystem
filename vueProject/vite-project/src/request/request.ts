@@ -1,3 +1,4 @@
+import { SortUp } from "@element-plus/icons-vue";
 import axios from "axios";
 import Cookies from "js-cookie";
 const instance = axios.create({
@@ -21,7 +22,18 @@ instance.interceptors.request.use(config =>{
 })
 
 instance.interceptors.response.use(result =>{
+
+    if(result.data === ''){   
+        let data = {
+            code:{
+                values:401,
+                describe:'no token'
+            }
+        }
+        result.data=data
+    }
     return result.data;
+
 }, err => {
     return Promise.reject(err);
 })
