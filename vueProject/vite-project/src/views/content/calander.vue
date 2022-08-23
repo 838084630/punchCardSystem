@@ -13,23 +13,23 @@
         <div v-if="compareToNow(item) === 0" style="color: #2d8cf0" @click="todo(item)">{{ item.date }}</div>
         <div v-if="compareToNow(item) === -1" @click="todo(item)">{{ item.date }}</div>
         <div v-if="compareToNow(item) === -2" style="color: red" class="otherDay" @click="todo(item)">
-          {{ item.date }}<div class="date-desc">欠</div>
+          {{ item.date }}
+          <!-- <div class="date-desc">欠</div> -->
         </div>
         <div v-if="compareToNow(item) === 1" class="future">{{ item.date }}</div>
       </div>
     </div>
   </div>
-
-  <!-- punch in dialog -->
-  <!-- <el-dialog v-model="dialogFormVisible" title="勤怠入力画面" width="500px" @close="displayMessage"> -->
-  <el-dialog v-model="dialogFormVisible" title="勤怠入力画面" width="500px">
+  <el-dialog custom-class="reply" v-model="dialogFormVisible" title="勤怠入力画面">
     <el-form :model="form">
-      <el-form-item label="出勤" :label-width="formLabelWidth">
+      <el-form-item >
+      <span slot="label" class="x">出勤:</span>
         <el-input v-model="form.punchin" autocomplete="off" :readonly="editStatusIn"
           :class="{ inputbgc: editStatusIn === true }" @click="getpunchInTime" />
         <!-- <p class="errMessage" v-if="messageFlgIn">未入力</p> -->
       </el-form-item>
-      <el-form-item label="退勤" :label-width="formLabelWidth">
+      <el-form-item>
+      <span slot="label" class="x">退勤:</span>
         <el-input v-model="form.punchout" autocomplete="off" :readonly="editStatusOut"
           :class="{ inputbgc: editStatusOut === true }" @click="getpunchOutTime" />
         <!-- <p class="errMessage" v-if="messageFlgOut">未入力</p> -->
@@ -42,10 +42,6 @@
       </span>
     </template>
   </el-dialog>
-
-
-
-
 
 </template>
 
@@ -109,8 +105,13 @@ let resubmit: number[] = reactive([])
 let recordIndex: any;
 
 onMounted(() => {
-
   getNow();
+})
+//初期化呼び出し
+todo({
+  year: now.value.getFullYear(),
+  month: now.value.getMonth() + 1,
+  date: now.value.getDate(),
 })
 const getNow = () => {
   //todo拿date请求后台，返回需要补卡的日期
@@ -277,15 +278,12 @@ const submit = () => {
 
 function getAbsenceArr() {
   let days = getMonthDay(Number(month.value));
-  console.log(year.value + '-' + month.value);
-  console.log(days);
-  console.log(resubmit);
-  resubmit.length=0
-  
+  resubmit.length = 0
+
   getAbsenceApi(Cookie.get('username') || '', year.value + '-' + month.value, days).then(res => {
-    if (res.code.value == 200) { 
-      let xx:number[]= res.data;
-      for(let i of xx){
+    if (res.code.value == 200) {
+      let xx: number[] = res.data;
+      for (let i of xx) {
         resubmit.push(i)
       }
     }
@@ -297,6 +295,47 @@ function getAbsenceArr() {
 
 
 <style scoped lang="less">
+
+.el-form-item__label{
+  width: 50px;
+
+}
+ @media screen and (max-width: 200000px) {
+    .calenderDiv {
+    width: 40%;
+    position: relative;
+    left: 20%;
+    margin-top: 3%;
+
+    .otherDay {
+      background-size: 40%;
+    }
+  }
+:deep(.reply) {
+  width: 35% !important;
+  min-width: 100px !important;
+}}
+@media screen and (max-width: 500px) {
+  
+  .calenderDiv {
+    width: 90%;
+    position: relative;
+    left: 5%;
+    margin-top: 3%;
+
+    .otherDay {
+      background-size: 70%;
+    }
+  }
+  :deep(.reply) {
+  width: 60% !important;
+  min-width: 100px !important;
+}} 
+
+.dialog1 {
+  width: 300px;
+}
+
 .el-button--text {
   margin-right: 15px;
 }
@@ -312,10 +351,6 @@ function getAbsenceArr() {
 .dialog-footer button:first-child {
   margin-right: 10px;
 }
-
-
-
-
 
 
 .top-title {
@@ -348,8 +383,7 @@ function getAbsenceArr() {
 // }
 
 .otherDay {
-  // background: url("../assets/circle_error.png") no-repeat center center;
-  // background-size: 2% 2%;
+  background: url("./../../assets/p7.jpeg") no-repeat center center;
   position: relative;
 }
 
@@ -369,12 +403,15 @@ function getAbsenceArr() {
   color: green;
 }
 
-.calenderDiv {
-  width: 50%;
-  position: relative;
-  top: 10%;
-  left: 20%;
+@media screen and (max-width: 200000px) {
+
+
 }
+
+@media screen and (max-width: 500px) {
+
+}
+
 
 .center {
   text-align: center;

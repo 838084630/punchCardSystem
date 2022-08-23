@@ -45,7 +45,6 @@ public class UserController {
         }else {
             response = userService.userCheck(user);
         }
-        System.out.println(response);
         return response;
 
     }

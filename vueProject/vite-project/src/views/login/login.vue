@@ -1,11 +1,11 @@
 <template>
   <div class="bg">
-    <el-card class="box-card">
-      <template #header>
-        <div class="card-header">
-          <span class="title">Punch Card System</span>
-        </div>
-      </template>
+    <div class="box-card">
+      <!-- <template #header> -->
+      <div class="card-header">
+        <span class="title">Attendance System</span>
+      </div>
+      <!-- </template> -->
       <el-form ref="ruleFormRef" :model="ruleForm" :rules="rules" class="demo-ruleForm">
         <el-form-item prop="username">
           <el-input v-model="ruleForm.username" type="text" autocomplete="off" placeholder="ユーザID"
@@ -19,7 +19,7 @@
           <el-button type="primary" @click="loginFn()" class="loginBtn">login</el-button>
         </el-form-item>
       </el-form>
-    </el-card>
+    </div>
   </div>
   <el-button :plain="true" @click="open4">error</el-button>
 </template>
@@ -47,13 +47,13 @@ const state = reactive({
 if (Cookie.get("token") != null && Cookie.get("username") != null) {
   userCheckApi({
     username: Cookie.get("username") || '',
-    token: Cookie.get("token")|| ''
+    token: Cookie.get("token") || ''
   }).then(res => {
-    if(res.code.value === 200){
-    router.push('/homepage')
+    if (res.code.value === 200) {
+      router.push('/homepage')
     }
   })
-}else{
+} else {
   alert('セッションが失効しました。もう一度ログインください')
 }
 
@@ -120,6 +120,35 @@ const loginFn = () => {
 </script>
 
 <style scoped>
+@media screen and (max-width: 9999px) {
+
+  /* 959px以下に適用されるCSS（タブレット用） */
+  .box-card {
+    width: 400px;
+    height: 300px;
+    background-color: white;
+  }
+
+  .title {
+    padding: 50px;
+  }
+}
+
+@media screen and (max-width: 480px) {
+
+  /* 480px以下に適用されるCSS（スマホ用） */
+  .box-card {
+    width: 60%;
+    height: 30%;
+    padding: 5%;
+  }
+    .title {
+    padding: 20px;
+  }
+}
+
+
+
 .bg {
   position: absolute;
   display: flex;
@@ -139,7 +168,10 @@ const loginFn = () => {
   align-items: center;
 }
 
-.title,
+.title {
+  margin: 0 auto;
+}
+
 .loginBtn {
   margin: 0 auto;
 }
@@ -153,7 +185,7 @@ const loginFn = () => {
 }
 
 .box-card {
-  width: 400px;
+  /* width: 400px; */
 
   filter: alpha(opacity=80);
   opacity: 0.8
