@@ -51,7 +51,6 @@ public class UserController {
 
     @GetMapping(value = "/record")
     public Res<?> getRecord(String username, String date){
-        System.out.println("******");
         Res<?> record = userService.getRecord(username, date);
         return record;
     }
@@ -64,6 +63,11 @@ public class UserController {
     @GetMapping(value = "/absence")
     public Res<?> getAbsenceRecord(String username, String time, Integer days){
         return userService.getAbsenceRecord(username,time,days);
+    }
+
+    @PostMapping()
+    public Res<?> getRecordByMonth(@RequestBody Record record){
+        return userService.getRecordByMonth(record);
     }
 
 }

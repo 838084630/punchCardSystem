@@ -66,7 +66,7 @@ public class UserService {
     }
 
     public Res<?> writeRecord(Record record) {
-        if (StringUtils.isEmpty(record.getUsername())) {
+        if (StringUtils.isEmpty(record.getUsername()) || (record.getPunchInTime() == null && record.getPunchOutTime() == null)) {
             build = Res.builder().code(Code.NOLOGIN_EXCEPTION).data(null).build();
         }
         Map<String, LocalDateTime> format = timeFormat(record.getPunchInTime(), record.getPunchOutTime());
@@ -118,7 +118,7 @@ public class UserService {
 
                 }
             }
-            record.stream().forEach(System.out::println);
+//            record.stream().forEach(System.out::println);
             //只放日期处理
             build = Res.builder().code(Code.SUCCESS).data(record).build();
         } else {
@@ -130,7 +130,7 @@ public class UserService {
 
     private Map<String, LocalDateTime> timeFormat(LocalDateTime punchInTime, LocalDateTime punchOutTime) {
         HashMap<String, LocalDateTime> map = new HashMap<>();
-        DateTimeFormatter df = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        DateTimeFormatter df = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
         if (punchInTime != null) {
             map.put("in", LocalDateTime.parse(punchInTime.format(df), df));
         }
@@ -140,4 +140,8 @@ public class UserService {
         return map;
     }
 
+    public Res<?> getRecordByMonth(Record record) {
+
+        return null;
+    }
 }

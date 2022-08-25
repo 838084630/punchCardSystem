@@ -31,7 +31,7 @@
         </div>
         <div class="homepage_menu2" v-if="!screenFlg">
             <el-drawer v-model="drawer" :with-header="false" direction="ltr" size="60%" ref="navDrawer">
-                <el-menu @select="menuActive" active-text-color="#ffd04b" background-color="#545c64" text-color="#fff"
+                <el-menu @select="menuActive" 
                     router default-active="/calander" class="el-menu-vertical-demo" :collapse="isCollapse"
                     @open="handleOpen" @close="handleClose">
                     <el-menu-item index="/calander">
@@ -44,7 +44,7 @@
                     <el-menu-item index="/dataInfo">
                         <el-icon>
                             <TrendCharts />
-                        </el-icon><template #title>勤務状況分析</template>
+                        </el-icon><template #title>勤務状況一覧</template>
                     </el-menu-item>
                     <el-menu-item index="/userInfo">
                         <el-icon>
@@ -62,18 +62,44 @@
         </div>
         <div class="right" :class="{ isActive: isCollapse }">
             <div class="homepage_header">
-                <el-icon v-if='!iconShow' style="margin-left: 16px;margin-top:16px" @click="drawer = true">
-                    <Menu />
-                </el-icon>
-                <el-icon v-if='!isCollapse && iconShow' @click="changeMenu" class="iconfont">
-                    <Fold />
-                </el-icon>
-                <el-icon v-if='isCollapse && iconShow' @click="changeMenu" class="iconfont">
-                    <Expand />
-                </el-icon>
-                <span class="topInfo">ようこそ、<b>{{ username }}</b>様<el-button type="warning" class="logout"
+                <div class="headerLeft" style="margin-left: 16px">
+                    <el-icon v-if='!iconShow' @click="drawer = true">
+                        <Menu />
+                    </el-icon>
+                    <el-icon v-if='!isCollapse && iconShow' @click="changeMenu" class="iconfont">
+                        <Fold />
+                    </el-icon>
+                    <el-icon v-if='isCollapse && iconShow' @click="changeMenu" class="iconfont">
+                        <Expand />
+                    </el-icon>
+                </div>
+                <div class="headerRight" style="margin-right: 16px">
+
+                    <el-dropdown>
+                        <span class="el-dropdown-link">
+                            <el-avatar src="https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png" />
+                        </span>
+                        <template #dropdown>
+                            <el-dropdown-menu>
+                                <el-dropdown-item divided class="nameCenter"><span><b>{{ username }}</b>様</span>
+                                </el-dropdown-item>
+                                <el-dropdown-item divided>
+                                    <el-button type="success" @click="">
+                                        個人設定</el-button>
+                                </el-dropdown-item>
+                                <el-dropdown-item divided>
+                                    <el-button type="warning" @click="centerDialogVisible = true">
+                                        LOGOUT</el-button>
+                                </el-dropdown-item>
+
+                            </el-dropdown-menu>
+                        </template>
+                    </el-dropdown>
+
+                </div>
+                <!-- <span class="topInfo">ようこそ、<b>{{ username }}</b>様<el-button type="warning" class="logout"
                         @click="centerDialogVisible = true">
-                        ログアウト</el-button></span>
+                        ログアウト</el-button></span> -->
             </div>
             <div class="homepage_content">
                 <router-view></router-view>
@@ -179,7 +205,7 @@ const confirm = () => {
 }
 
 :deep(.el-drawer__body) {
-    background-color: #545c64;
+    background-color: white;
 }
 
 .layout {
@@ -191,21 +217,33 @@ const confirm = () => {
     }
 
     .right {
-
-        // margin-left: 200px;
         .homepage_header {
             color: white;
             background-color: #1e78bf;
             height: 50px;
+            display: flex;
+
+            .headerLeft {
+                justify-content: flex-start;
+                display: flex;
+                align-items: center;
+            }
+
+            .headerRight {
+                flex: 1;
+                justify-content: flex-end;
+                display: flex;
+                align-items: center;
+                
+            }
         }
     }
 
-    // .isActive{
-    //     margin-left: 64px;
-    // }
 }
 
-
+:deep(.el-dropdown-menu__item) {
+                justify-content: center;
+            }
 .el-menu-vertical-demo:not(.el-menu--collapse) {
     width: 200px;
     min-height: 400px;
@@ -227,15 +265,15 @@ const confirm = () => {
     right: 2%;
 }
 
-.logout {
-    margin-left: 20px;
-}
-
 b {
     color: skyblue
 }
 
 a {
     color: white;
+}
+
+.nameCenter {
+    text-align: center;
 }
 </style>

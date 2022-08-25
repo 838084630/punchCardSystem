@@ -13,34 +13,21 @@
         <div v-if="compareToNow(item) === 0" style="color: #2d8cf0" @click="todo(item)">{{ item.date }}</div>
         <div v-if="compareToNow(item) === -1" @click="todo(item)">{{ item.date }}</div>
         <div v-if="compareToNow(item) === -2" style="color: red" class="otherDay" @click="todo(item)">
-          {{ item.date }}
-          <!-- <div class="date-desc">欠</div> -->
+          <el-button type="danger" circle class="otherDayBtnSize">{{ item.date }}</el-button>
         </div>
         <div v-if="compareToNow(item) === 1" class="future">{{ item.date }}</div>
       </div>
     </div>
   </div>
-  <el-dialog custom-class="reply" v-model="dialogFormVisible" title="勤怠入力画面">
-    <el-form :model="form">
-      <el-form-item >
-      <span slot="label" class="x">出勤:</span>
-        <el-input v-model="form.punchin" autocomplete="off" :readonly="editStatusIn"
-          :class="{ inputbgc: editStatusIn === true }" @click="getpunchInTime" />
-        <!-- <p class="errMessage" v-if="messageFlgIn">未入力</p> -->
-      </el-form-item>
-      <el-form-item>
-      <span slot="label" class="x">退勤:</span>
-        <el-input v-model="form.punchout" autocomplete="off" :readonly="editStatusOut"
-          :class="{ inputbgc: editStatusOut === true }" @click="getpunchOutTime" />
-        <!-- <p class="errMessage" v-if="messageFlgOut">未入力</p> -->
-      </el-form-item>
-    </el-form>
-    <template #footer>
-      <span class="dialog-footer">
-        <el-button @click="dialogFormVisible = false">キャンセル</el-button>
-        <el-button type="primary" @click="submit">確定</el-button>
-      </span>
-    </template>
+  <el-dialog custom-class="reply"  class="dialogClass" v-model="dialogFormVisible" title="勤怠入力画面" :before-close="handleClose">
+    <div class="btnCenter">
+      <el-button type="primary" circle class="btnSize" @click="submit" :disabled="btnStatus">{{ timeHHmm }}</el-button>
+    </div>
+    <div class="cont">
+          <div slot="label">出勤: <b>{{form.punchin}}</b></div>   
+          <div slot="label" v-if="form.punchout!==''">退勤: <b>{{form.punchout}}</b></div>
+          
+    </div>
   </el-dialog>
 
 </template>
@@ -55,45 +42,28 @@ import { ElMessage } from 'element-plus'
 
 let router = useRouter();
 const dialogFormVisible = ref(false)
-const formLabelWidth = '100px'
 const form = reactive({
   punchin: '',
   punchout: ''
 })
+let btnStatus = ref(true)
 
-let editStatusIn = ref(false);
-let editStatusOut = ref(false);
-// let messageFlgIn = ref(false);
-// let messageFlgOut = ref(false);
-
-function editStatusCheck(date: string) {
-  let today = ref(new Date());
-  let now = String(today.value.getFullYear()) + '-' + String(today.value.getMonth() + 1) + '-' + String(today.value.getDate());
-
-  if (new Date(date) < new Date(now)) {
-    editStatusOut.value = true
-    editStatusIn.value = true
-
-  } else {
-    if (form.punchin !== '') {
-      editStatusIn.value = true
-    } else {
-      editStatusIn.value = false
-    }
-
-    if (form.punchout !== '') {
-      editStatusOut.value = true
-      editStatusIn.value = true
-    } else {
-      editStatusOut.value = false
-    }
-
-  }
-
-
+let timeHHmm = ref('');
+let timer = null;
+const getNowTime = (newtime: any) => {
+  let hh = new Date().getHours() < 10 ? '0' + new Date().getHours() : new Date().getHours();
+  let mf = new Date().getMinutes() < 10 ? '0' + new Date().getMinutes() : new Date().getMinutes();
+  let mfx = new Date().getSeconds() < 10 ? '0' + new Date().getSeconds() : new Date().getSeconds();
+  return hh + ":" + mf + ":" + mfx;
 }
+onMounted(() => {
+  getNow();
+  timer = setInterval(() => {
+    timeHHmm.value = getNowTime(new Date());
+  }, 1000)
+})
 
-// let today = ref(new Date())
+
 let now = ref(new Date())
 let weeks = ref(["日", "一", "二", "三", "四", "五", "六"])
 let year = ref("")
@@ -104,9 +74,6 @@ let data: any = ref([])
 let resubmit: number[] = reactive([])
 let recordIndex: any;
 
-onMounted(() => {
-  getNow();
-})
 //初期化呼び出し
 todo({
   year: now.value.getFullYear(),
@@ -114,7 +81,6 @@ todo({
   date: now.value.getDate(),
 })
 const getNow = () => {
-  //todo拿date请求后台，返回需要补卡的日期
   year.value = String(now.value.getFullYear());
   month.value = String(now.value.getMonth() + 1);
   date.value = String(now.value.getDate());
@@ -130,7 +96,6 @@ function getMonthDay(month: number): any {
   } else if ([4, 6, 9, 11].includes(month)) {
     return 30
   } else if (month === 2) {
-    //  判断当年是否为闰年
     if (
       (Number(year.value) % 4 === 0 && Number(year.value) % 100 !== 0) ||
       Number(year.value) % 400 === 0
@@ -187,15 +152,18 @@ function compareToNow(item: any): any {
     now.setSeconds(0)
 
     if (date1.getTime() > now.getTime()) {
+      //将来
       return 1
     } else if (date1.getTime() === now.getTime()) {
+      //本日
       return 0
     } else if (date1.getTime() < now.getTime()) {
+      //以前
       if (resubmit.includes(item.date)) {
+        //以前欠勤の場合
         return -2
-        //需要补卡
       } else {
-        //不需要补卡
+        //以前正常の場合
         return -1
       }
 
@@ -210,14 +178,21 @@ function todo(item: any): any {
   let date = item.year + '-' + item.month + '-' + item.date
   getRecordApi(username, date).then(res => {
     if (res.code.value === 200) {
-
       if (res.data !== null) {
         form.punchin = res.data.punchInTime !== null ? res.data.punchInTime : '';
         form.punchout = res.data.punchOutTime !== null ? res.data.punchOutTime : '';
         recordIndex = res.data.id !== null ? res.data.id : '';
-
+        /*ボタン非活性判断
+          1.過去または将来の場合、ボタン非活性
+          2.本日の場合①出勤と退勤記録有：非活性　以外：活性
+        */
       }
-      editStatusCheck(date)
+       if (compareToNow(item) === 0) {  
+        console.log(form.punchin);
+        
+        console.log(form.punchin !== '' || form.punchout !== '');
+          btnStatus.value = form.punchin === '' || form.punchout === '' ? false : true;
+        }
     } else if (res.code.value === 401) {
       router.push('/login')
     }
@@ -231,31 +206,31 @@ const getLocalTime = () => {
   let dd = new Date().getDate() < 10 ? '0' + new Date().getDate() : new Date().getDate();
   let hh = new Date().getHours() < 10 ? '0' + new Date().getHours() : new Date().getHours();
   let mf = new Date().getMinutes() < 10 ? '0' + new Date().getMinutes() : new Date().getMinutes();
-  let ss = new Date().getSeconds() < 10 ? '0' + new Date().getSeconds() : new Date().getSeconds();
-  return yy + '-' + mm + '-' + dd + ' ' + hh + ':' + mf + ':' + ss;
+  return yy + '-' + mm + '-' + dd + ' ' + hh + ':' + mf;
 }
-
-const getpunchInTime = () => {
-  if (!editStatusIn.value) {
-    form.punchin = getLocalTime();
-  }
-}
-const getpunchOutTime = () => {
-  if (!editStatusOut.value) {
-    form.punchout = getLocalTime();
-  }
-}
-
 
 const submit = () => {
+  console.log(form.punchin);
+  console.log(form.punchout);
+  
   let punchInTime = form.punchin;
   let punchOutTime = form.punchout;
+  if (punchInTime === '') {
+    //本日の記録がない場合
+    punchInTime = getLocalTime();
+  } else if (punchInTime !== '' && punchOutTime === '') {
+    //本日の出勤記録があり、退勤記録がない場合
+    punchOutTime = getLocalTime();
+  }
+
   let record: any = {
     id: recordIndex,
     username: Cookie.get('username'),
     punchInTime: punchInTime,
     punchOutTime: punchOutTime
   }
+  console.log(record);
+  
 
   punchCardApi(record).then(res => {
     if (res.code.value === 200) {
@@ -271,19 +246,14 @@ const submit = () => {
 
 }
 
-// const displayMessage = () => {
-//   messageFlgIn.value = false;
-//   messageFlgOut.value = false;
-// }
-
 function getAbsenceArr() {
   let days = getMonthDay(Number(month.value));
   resubmit.length = 0
 
   getAbsenceApi(Cookie.get('username') || '', year.value + '-' + month.value, days).then(res => {
     if (res.code.value == 200) {
-      let xx: number[] = res.data;
-      for (let i of xx) {
+      let thisMonthErrDate: number[] = res.data;
+      for (let i of thisMonthErrDate) {
         resubmit.push(i)
       }
     }
@@ -291,17 +261,23 @@ function getAbsenceArr() {
 
 }
 
+const handleClose = (done: () => void) => {
+  btnStatus.value = true;
+  done()
+
+}
+
 </script>
 
 
 <style scoped lang="less">
-
-.el-form-item__label{
+.el-form-item__label {
   width: 50px;
 
 }
- @media screen and (max-width: 200000px) {
-    .calenderDiv {
+
+@media screen and (max-width: 200000px) {
+  .calenderDiv {
     width: 40%;
     position: relative;
     left: 20%;
@@ -311,12 +287,15 @@ function getAbsenceArr() {
       background-size: 40%;
     }
   }
-:deep(.reply) {
-  width: 35% !important;
-  min-width: 100px !important;
-}}
+
+  .inputOut {
+    width: 300px;
+  }
+
+}
+
 @media screen and (max-width: 500px) {
-  
+
   .calenderDiv {
     width: 90%;
     position: relative;
@@ -327,13 +306,9 @@ function getAbsenceArr() {
       background-size: 70%;
     }
   }
-  :deep(.reply) {
-  width: 60% !important;
-  min-width: 100px !important;
-}} 
-
-.dialog1 {
-  width: 300px;
+  .inputOut {
+    width: 150px;
+  }
 }
 
 .el-button--text {
@@ -341,10 +316,6 @@ function getAbsenceArr() {
 }
 
 .el-select {
-  width: 300px;
-}
-
-.el-input {
   width: 300px;
 }
 
@@ -367,24 +338,12 @@ function getAbsenceArr() {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   grid-auto-rows: 40px;
-  // grid-gap:1rem;
   background-color: #FFFFFF;
   line-height: 40px;
 
   div {
     text-align: center;
   }
-}
-
-// .today {
-//   background: url("../assets/circle_success.png") no-repeat center center;
-//   background-size: 95% 95%;
-//   position: relative;
-// }
-
-.otherDay {
-  background: url("./../../assets/p7.jpeg") no-repeat center center;
-  position: relative;
 }
 
 .link {
@@ -403,16 +362,6 @@ function getAbsenceArr() {
   color: green;
 }
 
-@media screen and (max-width: 200000px) {
-
-
-}
-
-@media screen and (max-width: 500px) {
-
-}
-
-
 .center {
   text-align: center;
 }
@@ -421,11 +370,29 @@ function getAbsenceArr() {
   background-color: gainsboro;
 }
 
-.inputbgc {
-  background-color: blue;
+.reply .el-dialog__body {
+  padding-top: 0px;
+  padding-bottom: 0px;
 }
 
-// .errMessage {
-//   color: red;
-// }
+.btnSize {
+  width: 120px;
+  height: 120px;
+}
+
+.otherDayBtnSize {
+  width: 30px;
+  height: 30px;
+}
+
+.btnCenter {
+  text-align: center;
+  margin: 10px;
+}
+
+.otherDay {
+  text-align: center;
+}
+
+.el-input input{border:none;}
 </style>
