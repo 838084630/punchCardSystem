@@ -1,5 +1,6 @@
 package com.example.demo.service;
 
+import com.alibaba.druid.sql.visitor.functions.Substring;
 import com.example.demo.config.Code;
 import com.example.demo.config.Res;
 import com.example.demo.mapper.UserMapper;
@@ -13,6 +14,7 @@ import org.apache.ibatis.binding.BindingException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.text.Collator;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -140,8 +142,54 @@ public class UserService {
         return map;
     }
 
-    public Res<?> getRecordByMonth(Record record) {
+    public Res<?> getRecordByMonth(String username, String month) {
+        if (StringUtils.isNotEmpty(username) && StringUtils.isNotEmpty(month)) {
+            //先月の25日から今月25日までの期間を今月の勤務時間として設置する
+            LocalDate timeTo = LocalDate.parse(month + "-26", DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+            LocalDate timeFrom = timeTo.minusDays(1).minusMonths(1);
+            List<Record> recordByMonth = userMapper.getRecordByMonth(timeFrom, timeTo);
+            ArrayList<Map<String, String>> result = new ArrayList<>();
+            ArrayList<String> queryDays = new ArrayList<>();
+            ArrayList<String> allDays = new ArrayList<>();
+            for (Record item : recordByMonth) {
+                HashMap<String, String> recordMap = new HashMap<>();
+                recordMap.put("id", String.valueOf(item.getId()));
+                recordMap.put("date", String.valueOf(item.getPunchInTime()).substring(0, 10));
+                recordMap.put("punchInTime", String.valueOf(item.getPunchInTime()).substring(11));
+                String toTime = item.getPunchOutTime() != null ? String.valueOf(item.getPunchOutTime()).substring(11) :null;
+                recordMap.put("punchOutTime", toTime);
+                queryDays.add(String.valueOf(item.getPunchInTime()).substring(0, 10));
+                result.add(recordMap);
+            }
+            //出勤しない日付を追加する
+            long length = timeTo.toEpochDay() - timeFrom.toEpochDay();
+            for (long i = length; i > 0; i--) {
+                allDays.add(String.valueOf(timeTo.minusDays(i)));
+            }
+            allDays.removeAll(queryDays);
+            for (String day:allDays) {
+                HashMap<String, String> errRecordMap = new HashMap<>();
+                errRecordMap.put("id", null);
+                errRecordMap.put("date", day);
+                errRecordMap.put("punchInTime", null);
+                errRecordMap.put("punchOutTime", null);
+                result.add(errRecordMap);
+            }
+                Collections.sort(result,new Comparator<Map<String,String>>() {
+                    @Override
+                    public int compare(Map<String,String> o1, Map<String,String> o2) {
+                        Collator instance = Collator.getInstance();
+                        return instance.compare(o1.get("date"), o2.get("date"));
+                    }
+                });
 
-        return null;
+
+
+            result.stream().forEach(System.out::println);
+            build = Res.builder().code(Code.SUCCESS).data(result).build();
+        } else {
+            build = Res.builder().code(Code.VALIDERROR_EXCEPTION).data(null).build();
+        }
+        return build;
     }
 }

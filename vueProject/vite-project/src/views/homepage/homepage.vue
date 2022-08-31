@@ -31,9 +31,8 @@
         </div>
         <div class="homepage_menu2" v-if="!screenFlg">
             <el-drawer v-model="drawer" :with-header="false" direction="ltr" size="60%" ref="navDrawer">
-                <el-menu @select="menuActive" 
-                    router default-active="/calander" class="el-menu-vertical-demo" :collapse="isCollapse"
-                    @open="handleOpen" @close="handleClose">
+                <el-menu @select="menuActive" router default-active="/calander" class="el-menu-vertical-demo"
+                    :collapse="isCollapse" @open="handleOpen" @close="handleClose">
                     <el-menu-item index="/calander">
                         <el-icon>
                             <Calendar />
@@ -103,19 +102,20 @@
             </div>
             <div class="homepage_content">
                 <router-view></router-view>
-                <div class="dialog_out">
-                    <el-dialog custom-class="reply" v-model="centerDialogVisible" title="ログアウトしますか？" width="30%" center>
-                        <template #footer>
-                            <span class="dialog-footer">
-                                <el-button @click="centerDialogVisible = false">キャンセル</el-button>
-                                <el-button type="primary" @click="confirm">確定</el-button>
-                            </span>
-                        </template>
-                    </el-dialog>
-                </div>
+
             </div>
         </div>
 
+    </div>
+    <div class="dialog_out">
+        <el-dialog custom-class="reply" v-model="centerDialogVisible" title="ログアウトしますか？" width="30%" center>
+            <template #footer>
+                <span class="dialog-footer">
+                    <el-button @click="centerDialogVisible = false">キャンセル</el-button>
+                    <el-button type="primary" @click="confirm">確定</el-button>
+                </span>
+            </template>
+        </el-dialog>
     </div>
 
 </template>
@@ -209,6 +209,8 @@ const confirm = () => {
 }
 
 .layout {
+    height: 100%;
+
     .homepage_menu {
         background: #545c64;
         position: fixed;
@@ -217,6 +219,8 @@ const confirm = () => {
     }
 
     .right {
+        height: 100%;
+
         .homepage_header {
             color: white;
             background-color: #1e78bf;
@@ -234,16 +238,21 @@ const confirm = () => {
                 justify-content: flex-end;
                 display: flex;
                 align-items: center;
-                
+
             }
+        }
+
+        .homepage_content {
+            height: 100%;
         }
     }
 
 }
 
 :deep(.el-dropdown-menu__item) {
-                justify-content: center;
-            }
+    justify-content: center;
+}
+
 .el-menu-vertical-demo:not(.el-menu--collapse) {
     width: 200px;
     min-height: 400px;

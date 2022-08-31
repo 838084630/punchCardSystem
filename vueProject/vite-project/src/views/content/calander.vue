@@ -19,14 +19,16 @@
       </div>
     </div>
   </div>
-  <el-dialog custom-class="reply"  class="dialogClass" v-model="dialogFormVisible" title="勤怠入力画面" :before-close="handleClose">
+  <el-dialog custom-class="reply" class="dialogClass" v-model="dialogFormVisible" title="勤怠入力画面"
+    :before-close="handleClose">
     <div class="btnCenter">
-      <el-button type="primary" circle class="btnSize" @click="submit" :disabled="btnStatus">{{ timeHHmm }}</el-button>
+      <el-button type="primary" circle class="btnSize" :class="{ btnAction: !btnStatus }" @click="submit"
+        :disabled="btnStatus">{{ timeHHmm }}</el-button>
     </div>
     <div class="cont">
-          <div slot="label">出勤: <b>{{form.punchin}}</b></div>   
-          <div slot="label" v-if="form.punchout!==''">退勤: <b>{{form.punchout}}</b></div>
-          
+      <div slot="label">出勤: <b>{{ form.punchin }}</b></div>
+      <div slot="label">退勤: <b>{{ form.punchout }}</b></div>
+
     </div>
   </el-dialog>
 
@@ -34,7 +36,7 @@
 
 
 <script lang="ts" setup>
-import { ref, onMounted, reactive } from 'vue'
+import { ref, onMounted, reactive, onBeforeUnmount } from 'vue'
 import { getRecordApi, punchCardApi, getAbsenceApi } from '../../request/api'
 import Cookie from 'js-cookie'
 import { useRouter } from 'vue-router';
@@ -62,6 +64,12 @@ onMounted(() => {
     timeHHmm.value = getNowTime(new Date());
   }, 1000)
 })
+
+// onBeforeUnmount(()=>{
+//   if(timer){
+//     clearInterval(timer)
+//   }
+// })
 
 
 let now = ref(new Date())
@@ -187,12 +195,9 @@ function todo(item: any): any {
           2.本日の場合①出勤と退勤記録有：非活性　以外：活性
         */
       }
-       if (compareToNow(item) === 0) {  
-        console.log(form.punchin);
-        
-        console.log(form.punchin !== '' || form.punchout !== '');
-          btnStatus.value = form.punchin === '' || form.punchout === '' ? false : true;
-        }
+      if (compareToNow(item) === 0) {
+        btnStatus.value = form.punchin === '' || form.punchout === '' ? false : true;
+      }
     } else if (res.code.value === 401) {
       router.push('/login')
     }
@@ -212,7 +217,7 @@ const getLocalTime = () => {
 const submit = () => {
   console.log(form.punchin);
   console.log(form.punchout);
-  
+
   let punchInTime = form.punchin;
   let punchOutTime = form.punchout;
   if (punchInTime === '') {
@@ -229,8 +234,6 @@ const submit = () => {
     punchInTime: punchInTime,
     punchOutTime: punchOutTime
   }
-  console.log(record);
-  
 
   punchCardApi(record).then(res => {
     if (res.code.value === 200) {
@@ -252,7 +255,7 @@ function getAbsenceArr() {
 
   getAbsenceApi(Cookie.get('username') || '', year.value + '-' + month.value, days).then(res => {
     if (res.code.value == 200) {
-      let thisMonthErrDate: number[] = res.data;
+      let thisMonthErrDate: any = res.data;
       for (let i of thisMonthErrDate) {
         resubmit.push(i)
       }
@@ -306,6 +309,7 @@ const handleClose = (done: () => void) => {
       background-size: 70%;
     }
   }
+
   .inputOut {
     width: 150px;
   }
@@ -380,6 +384,16 @@ const handleClose = (done: () => void) => {
   height: 120px;
 }
 
+.btnAction {
+  animation: heartbeat 2s linear infinite;
+}
+
+@keyframes heartbeat {
+  50% {
+    transform: scale(1.1);
+  }
+}
+
 .otherDayBtnSize {
   width: 30px;
   height: 30px;
@@ -394,5 +408,7 @@ const handleClose = (done: () => void) => {
   text-align: center;
 }
 
-.el-input input{border:none;}
+.el-input input {
+  border: none;
+}
 </style>

@@ -4,6 +4,7 @@ import com.example.demo.pojo.Record;
 import com.example.demo.pojo.User;
 import org.apache.ibatis.annotations.*;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -30,4 +31,7 @@ public interface UserMapper {
     List<Integer> getAbsenceRecord(@Param("username") String username, @Param("newDate") ArrayList<String> newDate);
 
     long getDay(String day);
+
+    @Select("select id,username,punch_in_time,punch_out_time from attendance.record r where punch_in_time between #{timeFrom} and #{timeTo} order by punch_in_time;")
+    List<Record> getRecordByMonth(LocalDate timeFrom, LocalDate timeTo);
 }

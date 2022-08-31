@@ -65,9 +65,9 @@ public class UserController {
         return userService.getAbsenceRecord(username,time,days);
     }
 
-    @PostMapping()
-    public Res<?> getRecordByMonth(@RequestBody Record record){
-        return userService.getRecordByMonth(record);
+    @GetMapping(value = "/monthData")
+    public Res<?> getRecordByMonth(String username, String month){
+        return userService.getRecordByMonth(username,month);
     }
 
 }
