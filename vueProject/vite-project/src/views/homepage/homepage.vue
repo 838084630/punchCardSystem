@@ -53,7 +53,7 @@
                     <el-menu-item index="/export">
                         <el-icon>
                             <Document />
-                        </el-icon><template #title>データ入出力</template>
+                        </el-icon><template #title>テンプレート</template>
                     </el-menu-item>
 
                 </el-menu>

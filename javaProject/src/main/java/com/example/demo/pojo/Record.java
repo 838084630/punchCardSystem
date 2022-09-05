@@ -15,6 +15,10 @@ public class Record {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm")
     private LocalDateTime punchOutTime;
 
+    private Double comeLate;
+
+    private Double leaveEarly;
+
     public Integer getId() {
         return id;
     }
@@ -45,5 +49,21 @@ public class Record {
 
     public void setPunchOutTime(LocalDateTime punchOutTime) {
         this.punchOutTime = punchOutTime;
+    }
+
+    public Double getComeLate() {
+        return comeLate;
+    }
+
+    public void setComeLate(Double comeLate) {
+        this.comeLate = comeLate;
+    }
+
+    public Double getLeaveEarly() {
+        return leaveEarly;
+    }
+
+    public void setLeaveEarly(Double leaveEarly) {
+        this.leaveEarly = leaveEarly;
     }
 }

@@ -1,6 +1,5 @@
 package com.example.demo.service;
 
-import com.alibaba.druid.sql.visitor.functions.Substring;
 import com.example.demo.config.Code;
 import com.example.demo.config.Res;
 import com.example.demo.mapper.UserMapper;
@@ -11,10 +10,13 @@ import com.example.demo.utils.DateUtil;
 import com.example.demo.utils.TokenUtil;
 import org.apache.commons.lang.StringUtils;
 import org.apache.ibatis.binding.BindingException;
+import org.apache.poi.ss.formula.functions.T;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.text.Collator;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -23,6 +25,14 @@ import java.util.*;
 @Service
 public class UserService {
 
+    public static final String NORMAL_PUNCH_IN_TIME = "09:30";
+    public static final String NORMAL_PUNCH_OUT_TIME = "18:00";
+    public static final String SHIFT1_PUNCH_IN_TIME = "09:00";
+    public static final String SHIFT1_PUNCH_OUT_TIME = "17:30";
+    public static final String SHIFT2_PUNCH_IN_TIME = "10:00";
+    public static final String SHIFT2_PUNCH_OUT_TIME = "18:30";
+    public static final String SHIFT3_PUNCH_IN_TIME = "10:30";
+    public static final String SHIFT3_PUNCH_OUT_TIME = "19:00";
     @Autowired
     private UserMapper userMapper;
     @Autowired
@@ -73,10 +83,60 @@ public class UserService {
         }
         Map<String, LocalDateTime> format = timeFormat(record.getPunchInTime(), record.getPunchOutTime());
         if (record.getId() != null) {
-            long result = userMapper.updateRecord(record.getId(), format.get("in"), format.get("out"));
-            build = result == 1 ? Res.builder().code(Code.SUCCESS).data(record).build() : Res.builder().code(Code.SQLERR_EXCEPTION).data(null).build();
+            //退勤記録保存
+            //早退判断
+            //2022-09-04T17:51
+            DateTimeFormatter df = DateTimeFormatter.ofPattern("HH:mm");
+            String punchTimeStr = df.format(format.get("out"));
+            SimpleDateFormat sdf = new SimpleDateFormat("HH:mm");
+            Date endTime;
+            Date normalTime;
+            Double leaveEarly = null;
+
+            try {
+                //出勤時間帯指定
+                if (true) {
+                    normalTime = sdf.parse(NORMAL_PUNCH_OUT_TIME);
+                }
+                endTime = sdf.parse(punchTimeStr);
+
+                if (endTime.before(normalTime)) {
+                    leaveEarly = new Double(getHoursForLong(endTime.getTime() - normalTime.getTime())) > 7.5 ?
+                            7.5 : new Double(getHoursForLong(endTime.getTime() - normalTime.getTime()));
+                }
+                long result = userMapper.updateRecord(record.getId(), format.get("out"),leaveEarly);
+                build = result == 1 ? Res.builder().code(Code.SUCCESS).data(record).build() : Res.builder().code(Code.SQLERR_EXCEPTION).data(record).build();
+            } catch (ParseException e) {
+                build = Res.builder().code(Code.VALIDERROR_EXCEPTION).data(record).build();
+            }
+
         } else {
-            userMapper.createRecord(record.getUsername(), format.get("in"), format.get("out"));
+            //出勤記録保存
+            //遅刻判断
+            //2022-09-04T17:51
+            DateTimeFormatter df = DateTimeFormatter.ofPattern("HH:mm");
+            String punchTimeStr = df.format(format.get("in"));
+            SimpleDateFormat sdf = new SimpleDateFormat("HH:mm");
+            Date startTime;
+            Date normalTime;
+            Double comeLate = null;
+
+            try {
+                //出勤時間帯指定
+                if (true) {
+                    normalTime = sdf.parse(NORMAL_PUNCH_IN_TIME);
+                }
+                startTime = sdf.parse(punchTimeStr);
+
+                if (startTime.after(normalTime)) {
+                    comeLate = new Double(getHoursForLong(startTime.getTime() - normalTime.getTime())) > 7.5 ?
+                            7.5 : new Double(getHoursForLong(startTime.getTime() - normalTime.getTime()));
+                }
+                long result = userMapper.createRecord(record.getUsername(), format.get("in"), comeLate);
+                build = result == 1 ? Res.builder().code(Code.SUCCESS).data(record).build() : Res.builder().code(Code.SQLERR_EXCEPTION).data(record).build();
+            } catch (ParseException e) {
+                build = Res.builder().code(Code.VALIDERROR_EXCEPTION).data(record).build();
+            }
 
         }
         return build;
@@ -143,53 +203,148 @@ public class UserService {
     }
 
     public Res<?> getRecordByMonth(String username, String month) {
+
         if (StringUtils.isNotEmpty(username) && StringUtils.isNotEmpty(month)) {
-            //先月の25日から今月25日までの期間を今月の勤務時間として設置する
-            LocalDate timeTo = LocalDate.parse(month + "-26", DateTimeFormatter.ofPattern("yyyy-MM-dd"));
-            LocalDate timeFrom = timeTo.minusDays(1).minusMonths(1);
-            List<Record> recordByMonth = userMapper.getRecordByMonth(timeFrom, timeTo);
-            ArrayList<Map<String, String>> result = new ArrayList<>();
-            ArrayList<String> queryDays = new ArrayList<>();
-            ArrayList<String> allDays = new ArrayList<>();
-            for (Record item : recordByMonth) {
+//            //ロジックA**************************************
+//            //先月の25日から今月25日までの期間を今月の勤務時間として設置する
+//            LocalDate timeTo = LocalDate.parse(month + "-26", DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+//            LocalDate timeFrom = timeTo.minusDays(1).minusMonths(1);
+//            List<Record> recordByMonth = userMapper.getRecordByMonth(username,timeFrom, timeTo);
+//            ArrayList<Map<String, String>> result = new ArrayList<>();
+//            ArrayList<String> queryDays = new ArrayList<>();
+//            ArrayList<String> allDays = new ArrayList<>();
+//            for (Record item : recordByMonth) {
+//                HashMap<String, String> recordMap = new HashMap<>();
+//                recordMap.put("id", String.valueOf(item.getId()));
+//                recordMap.put("date", String.valueOf(item.getPunchInTime()).substring(0, 10));
+//                recordMap.put("punchInTime", String.valueOf(item.getPunchInTime()).substring(11));
+//                String toTime = item.getPunchOutTime() != null ? String.valueOf(item.getPunchOutTime()).substring(11) :null;
+//                recordMap.put("punchOutTime", toTime);
+//                queryDays.add(String.valueOf(item.getPunchInTime()).substring(0, 10));
+//                result.add(recordMap);
+//            }
+//            //出勤しない日付を追加する
+//            long length = timeTo.toEpochDay() - timeFrom.toEpochDay();
+//            for (long i = length; i > 0; i--) {
+//                allDays.add(String.valueOf(timeTo.minusDays(i)));
+//            }
+//            allDays.removeAll(queryDays);
+//            for (String day:allDays) {
+//                HashMap<String, String> errRecordMap = new HashMap<>();
+//                errRecordMap.put("id", null);
+//                errRecordMap.put("date", day);
+//                errRecordMap.put("punchInTime", null);
+//                errRecordMap.put("punchOutTime", null);
+//                result.add(errRecordMap);
+//            }
+//                Collections.sort(result,new Comparator<Map<String,String>>() {
+//                    @Override
+//                    public int compare(Map<String,String> o1, Map<String,String> o2) {
+//                        Collator instance = Collator.getInstance();
+//                        return instance.compare(o1.get("date"), o2.get("date"));
+//                    }
+//                });
+//            result.stream().forEach(System.out::println);
+//            build = Res.builder().code(Code.SUCCESS).data(result).build();
+
+
+            //ロジックB*****************************************
+            List<Record> recordByMonthB = userMapper.getRecordByMonthB(username, month);
+            ArrayList<Map<String, String>> resultB = new ArrayList<>();
+            ArrayList<String> queryDaysB = new ArrayList<>();
+            ArrayList<String> allDaysB = new ArrayList<>();
+            for (Record item : recordByMonthB) {
                 HashMap<String, String> recordMap = new HashMap<>();
                 recordMap.put("id", String.valueOf(item.getId()));
                 recordMap.put("date", String.valueOf(item.getPunchInTime()).substring(0, 10));
                 recordMap.put("punchInTime", String.valueOf(item.getPunchInTime()).substring(11));
-                String toTime = item.getPunchOutTime() != null ? String.valueOf(item.getPunchOutTime()).substring(11) :null;
+                String toTime = item.getPunchOutTime() != null ? String.valueOf(item.getPunchOutTime()).substring(11) : null;
                 recordMap.put("punchOutTime", toTime);
-                queryDays.add(String.valueOf(item.getPunchInTime()).substring(0, 10));
-                result.add(recordMap);
+                String comeLate = item.getComeLate()!=null?String.valueOf(item.getComeLate()):null;
+                String leaveEarly = item.getLeaveEarly()!=null?String.valueOf(item.getLeaveEarly()):null;
+                recordMap.put("comeLate", comeLate);
+                recordMap.put("leaveEarly", leaveEarly);
+                queryDaysB.add(String.valueOf(item.getPunchInTime()).substring(0, 10));
+                resultB.add(recordMap);
             }
-            //出勤しない日付を追加する
-            long length = timeTo.toEpochDay() - timeFrom.toEpochDay();
-            for (long i = length; i > 0; i--) {
-                allDays.add(String.valueOf(timeTo.minusDays(i)));
+            int lengthB = getLastDay(month).lengthOfMonth();
+            for (long i = lengthB; i > 0; i--) {
+                allDaysB.add(String.valueOf(getLastDay(month).minusDays(i - 1)));
             }
-            allDays.removeAll(queryDays);
-            for (String day:allDays) {
+            allDaysB.removeAll(queryDaysB);
+            for (String day : allDaysB) {
                 HashMap<String, String> errRecordMap = new HashMap<>();
                 errRecordMap.put("id", null);
                 errRecordMap.put("date", day);
                 errRecordMap.put("punchInTime", null);
                 errRecordMap.put("punchOutTime", null);
-                result.add(errRecordMap);
+                errRecordMap.put("comeLate", null);
+                errRecordMap.put("leaveEarly", null);
+                resultB.add(errRecordMap);
             }
-                Collections.sort(result,new Comparator<Map<String,String>>() {
-                    @Override
-                    public int compare(Map<String,String> o1, Map<String,String> o2) {
-                        Collator instance = Collator.getInstance();
-                        return instance.compare(o1.get("date"), o2.get("date"));
-                    }
-                });
+            Collections.sort(resultB, new Comparator<Map<String, String>>() {
+                @Override
+                public int compare(Map<String, String> o1, Map<String, String> o2) {
+                    Collator instance = Collator.getInstance();
+                    return instance.compare(o1.get("date"), o2.get("date"));
+                }
+            });
+            resultB.stream().forEach(System.out::println);
+            build = Res.builder().code(Code.SUCCESS).data(resultB).build();
 
-
-
-            result.stream().forEach(System.out::println);
-            build = Res.builder().code(Code.SUCCESS).data(result).build();
         } else {
             build = Res.builder().code(Code.VALIDERROR_EXCEPTION).data(null).build();
         }
+
         return build;
+    }
+
+    /**
+     * 一か月の最初の日を取得する
+     * @param yearAndMonth yyyy-MM
+     * @return 最初の日 yyyy-MM-dd
+     */
+    private LocalDate getFirstDay(String yearAndMonth) {
+        String[] yearAndMonthArr = yearAndMonth.split("-");
+        int year = Integer.parseInt(yearAndMonthArr[0]);
+        String monthStr = yearAndMonthArr[1].startsWith("0") ? yearAndMonthArr[1].substring(yearAndMonthArr[1].length() - 1) : yearAndMonthArr[1];
+        int month = Integer.parseInt(monthStr);
+        Calendar c = Calendar.getInstance();
+        c.set(Calendar.YEAR, year);
+        c.set(Calendar.MONTH, month - 1);
+        c.set(Calendar.DAY_OF_MONTH, 1);
+        LocalDate firstDay = LocalDate.parse(dateUtil.newDate(c.get(Calendar.YEAR) + "-" + (c.get(Calendar.MONTH) + 1) + "-" + c.get(Calendar.DAY_OF_MONTH)), DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+        return firstDay;
+    }
+
+    /**
+     * 一か月の最後の日を取得する
+     * @param yearAndMonth yyyy-MM
+     * @return 最後の日 yyyy-MM-dd
+     */
+    private LocalDate getLastDay(String yearAndMonth) {
+        String[] yearAndMonthArr = yearAndMonth.split("-");
+        int year = Integer.parseInt(yearAndMonthArr[0]);
+        String monthStr = yearAndMonthArr[1].startsWith("0") ? yearAndMonthArr[1].substring(yearAndMonthArr[1].length() - 1) : yearAndMonthArr[1];
+        int month = Integer.parseInt(monthStr);
+        Calendar c = Calendar.getInstance();
+        c.set(Calendar.YEAR, year);
+        c.set(Calendar.MONTH, month - 1);
+        c.set(Calendar.DAY_OF_MONTH, c.getActualMaximum(Calendar.DAY_OF_MONTH));
+        LocalDate lastDay = LocalDate.parse(dateUtil.newDate(c.get(Calendar.YEAR) + "-" + (c.get(Calendar.MONTH) + 1) + "-" + c.get(Calendar.DAY_OF_MONTH)), DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+        return lastDay;
+    }
+
+    /**
+     * millisecondsをhoursに換算する
+     * @param time milliseconds
+     * @return hours
+     */
+    public static String getHoursForLong(Long time) {
+        float newTime;
+        time = time / 1000;
+        newTime = (float) time % (1000 * 60 * 60 * 24) / (1000 * 60 * 60);
+        newTime = newTime * 1000;
+        return String.format("%.2f", newTime);
     }
 }
