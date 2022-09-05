@@ -5,15 +5,17 @@
     <update id="updateRecord">
         update attendance.record
         <set>
-            <if test="punchOutTime != null">punch_out_time = #{punchOutTime}</if>
-            <if test="leaveEarly != null">leave=early = #{leaveEarly}</if>
+            punch_in_time = #{punchInTime},
+            punch_out_time = #{punchOutTime},
+            leave_early = #{leaveEarly},
+            come_late = #{comeLate}
         </set>
         where id = #{id}
     </update>
 
     <insert id="createRecord">
-        insert into attendance.record(username,punch_in_time,come_late)
-        values(#{username},#{punchInTime},#{comeLate})
+        insert into attendance.record(username,punch_in_time,punch_out_time,come_late,leave_early)
+        values(#{username},#{punchInTime},#{punchOutTime},#{comeLate},#{leaveEarly})
     </insert>
 
     <select id="getAbsenceRecord" resultType="int">
@@ -36,6 +38,7 @@
         select * from attendance.record where
         (substring(to_char(punch_in_time, 'YYYY-MM-DD HH24:MI:SS'),0,11) = #{day} or
         substring(to_char(punch_out_time, 'YYYY-MM-DD HH24:MI:SS'),0,11) = #{day})
+        where username = #{username}
     </select>
 
 </mapper>

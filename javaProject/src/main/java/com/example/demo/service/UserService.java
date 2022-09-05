@@ -10,7 +10,6 @@ import com.example.demo.utils.DateUtil;
 import com.example.demo.utils.TokenUtil;
 import org.apache.commons.lang.StringUtils;
 import org.apache.ibatis.binding.BindingException;
-import org.apache.poi.ss.formula.functions.T;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -33,6 +32,7 @@ public class UserService {
     public static final String SHIFT2_PUNCH_OUT_TIME = "18:30";
     public static final String SHIFT3_PUNCH_IN_TIME = "10:30";
     public static final String SHIFT3_PUNCH_OUT_TIME = "19:00";
+
     @Autowired
     private UserMapper userMapper;
     @Autowired
@@ -82,62 +82,18 @@ public class UserService {
             build = Res.builder().code(Code.NOLOGIN_EXCEPTION).data(null).build();
         }
         Map<String, LocalDateTime> format = timeFormat(record.getPunchInTime(), record.getPunchOutTime());
-        if (record.getId() != null) {
-            //退勤記録保存
-            //早退判断
-            //2022-09-04T17:51
-            DateTimeFormatter df = DateTimeFormatter.ofPattern("HH:mm");
-            String punchTimeStr = df.format(format.get("out"));
-            SimpleDateFormat sdf = new SimpleDateFormat("HH:mm");
-            Date endTime;
-            Date normalTime;
-            Double leaveEarly = null;
-
-            try {
-                //出勤時間帯指定
-                if (true) {
-                    normalTime = sdf.parse(NORMAL_PUNCH_OUT_TIME);
-                }
-                endTime = sdf.parse(punchTimeStr);
-
-                if (endTime.before(normalTime)) {
-                    leaveEarly = new Double(getHoursForLong(endTime.getTime() - normalTime.getTime())) > 7.5 ?
-                            7.5 : new Double(getHoursForLong(endTime.getTime() - normalTime.getTime()));
-                }
-                long result = userMapper.updateRecord(record.getId(), format.get("out"),leaveEarly);
-                build = result == 1 ? Res.builder().code(Code.SUCCESS).data(record).build() : Res.builder().code(Code.SQLERR_EXCEPTION).data(record).build();
-            } catch (ParseException e) {
-                build = Res.builder().code(Code.VALIDERROR_EXCEPTION).data(record).build();
+        Map<String, Double> abnormalDate;
+        long result;
+        try {
+            abnormalDate = getAbnormalDate(format);
+            if (record.getId() != null) {
+                result = userMapper.updateRecord(record.getId(), format.get("in"), format.get("out"), abnormalDate.get("comeLate"), abnormalDate.get("leaveEarly"));
+            }else{
+                result = userMapper.createRecord(record.getUsername(), format.get("in"), format.get("out"), abnormalDate.get("comeLate"), abnormalDate.get("leaveEarly"));
             }
-
-        } else {
-            //出勤記録保存
-            //遅刻判断
-            //2022-09-04T17:51
-            DateTimeFormatter df = DateTimeFormatter.ofPattern("HH:mm");
-            String punchTimeStr = df.format(format.get("in"));
-            SimpleDateFormat sdf = new SimpleDateFormat("HH:mm");
-            Date startTime;
-            Date normalTime;
-            Double comeLate = null;
-
-            try {
-                //出勤時間帯指定
-                if (true) {
-                    normalTime = sdf.parse(NORMAL_PUNCH_IN_TIME);
-                }
-                startTime = sdf.parse(punchTimeStr);
-
-                if (startTime.after(normalTime)) {
-                    comeLate = new Double(getHoursForLong(startTime.getTime() - normalTime.getTime())) > 7.5 ?
-                            7.5 : new Double(getHoursForLong(startTime.getTime() - normalTime.getTime()));
-                }
-                long result = userMapper.createRecord(record.getUsername(), format.get("in"), comeLate);
-                build = result == 1 ? Res.builder().code(Code.SUCCESS).data(record).build() : Res.builder().code(Code.SQLERR_EXCEPTION).data(record).build();
-            } catch (ParseException e) {
-                build = Res.builder().code(Code.VALIDERROR_EXCEPTION).data(record).build();
-            }
-
+            build = result == 1 ? Res.builder().code(Code.SUCCESS).data(record).build() : Res.builder().code(Code.SQLERR_EXCEPTION).data(record).build();
+        } catch (ParseException e) {
+            build = Res.builder().code(Code.VALIDERROR_EXCEPTION).data(record).build();
         }
         return build;
     }
@@ -159,7 +115,7 @@ public class UserService {
             //一日の出勤と退勤どれも入力しないデータを検索する
             for (String day : dayList) {
                 try {
-                    userMapper.getDay(day);
+                    userMapper.getDay(username, day);
                 } catch (BindingException e) {
                     if (thisMonth == Integer.parseInt(time.replace("-", ""))) {
                         //删掉上一个sql查出的今天未打卡记录
@@ -260,8 +216,8 @@ public class UserService {
                 recordMap.put("punchInTime", String.valueOf(item.getPunchInTime()).substring(11));
                 String toTime = item.getPunchOutTime() != null ? String.valueOf(item.getPunchOutTime()).substring(11) : null;
                 recordMap.put("punchOutTime", toTime);
-                String comeLate = item.getComeLate()!=null?String.valueOf(item.getComeLate()):null;
-                String leaveEarly = item.getLeaveEarly()!=null?String.valueOf(item.getLeaveEarly()):null;
+                String comeLate = item.getComeLate() != null ? String.valueOf(item.getComeLate()) : null;
+                String leaveEarly = item.getLeaveEarly() != null ? String.valueOf(item.getLeaveEarly()) : null;
                 recordMap.put("comeLate", comeLate);
                 recordMap.put("leaveEarly", leaveEarly);
                 queryDaysB.add(String.valueOf(item.getPunchInTime()).substring(0, 10));
@@ -272,15 +228,20 @@ public class UserService {
                 allDaysB.add(String.valueOf(getLastDay(month).minusDays(i - 1)));
             }
             allDaysB.removeAll(queryDaysB);
+            String format = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+            LocalDate today = LocalDate.parse(format, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
             for (String day : allDaysB) {
-                HashMap<String, String> errRecordMap = new HashMap<>();
-                errRecordMap.put("id", null);
-                errRecordMap.put("date", day);
-                errRecordMap.put("punchInTime", null);
-                errRecordMap.put("punchOutTime", null);
-                errRecordMap.put("comeLate", null);
-                errRecordMap.put("leaveEarly", null);
-                resultB.add(errRecordMap);
+                LocalDate dayItem = LocalDate.parse(day, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+                if (!today.isBefore(dayItem)) {
+                    HashMap<String, String> errRecordMap = new HashMap<>();
+                    errRecordMap.put("id", null);
+                    errRecordMap.put("date", day);
+                    errRecordMap.put("punchInTime", null);
+                    errRecordMap.put("punchOutTime", null);
+                    errRecordMap.put("comeLate", null);
+                    errRecordMap.put("leaveEarly", null);
+                    resultB.add(errRecordMap);
+                }
             }
             Collections.sort(resultB, new Comparator<Map<String, String>>() {
                 @Override
@@ -289,7 +250,6 @@ public class UserService {
                     return instance.compare(o1.get("date"), o2.get("date"));
                 }
             });
-            resultB.stream().forEach(System.out::println);
             build = Res.builder().code(Code.SUCCESS).data(resultB).build();
 
         } else {
@@ -301,6 +261,7 @@ public class UserService {
 
     /**
      * 一か月の最初の日を取得する
+     *
      * @param yearAndMonth yyyy-MM
      * @return 最初の日 yyyy-MM-dd
      */
@@ -319,6 +280,7 @@ public class UserService {
 
     /**
      * 一か月の最後の日を取得する
+     *
      * @param yearAndMonth yyyy-MM
      * @return 最後の日 yyyy-MM-dd
      */
@@ -337,6 +299,7 @@ public class UserService {
 
     /**
      * millisecondsをhoursに換算する
+     *
      * @param time milliseconds
      * @return hours
      */
@@ -346,5 +309,43 @@ public class UserService {
         newTime = (float) time % (1000 * 60 * 60 * 24) / (1000 * 60 * 60);
         newTime = newTime * 1000;
         return String.format("%.2f", newTime);
+    }
+
+    private Map<String, Double> getAbnormalDate(Map<String, LocalDateTime> format) throws ParseException {
+        HashMap<String, Double> abnormalDateMap = new HashMap<>();
+        DateTimeFormatter df = DateTimeFormatter.ofPattern("HH:mm");
+        String punchInTimeStr = df.format(format.get("in"));
+        String punchOutTimeStr = format.get("out") != null ? df.format(format.get("out")) : null;
+        SimpleDateFormat sdf = new SimpleDateFormat("HH:mm");
+        Date startTime;
+        Date endTime;
+        Date normalStartTime;
+        Date normalEndTime;
+        Double comeLate = null;
+        Double leaveEarly = null;
+        normalStartTime = sdf.parse(NORMAL_PUNCH_IN_TIME);
+        normalEndTime = sdf.parse(NORMAL_PUNCH_OUT_TIME);
+        if (StringUtils.isEmpty(punchOutTimeStr)) {
+            startTime = sdf.parse(punchInTimeStr);
+            if (startTime.after(normalStartTime)) {
+                comeLate = new Double(getHoursForLong(startTime.getTime() - normalStartTime.getTime())) > 7.5 ?
+                        7.5 : new Double(getHoursForLong(startTime.getTime() - normalStartTime.getTime()));
+            }
+            abnormalDateMap.put("comeLate", comeLate);
+        } else {
+            startTime = sdf.parse(punchInTimeStr);
+            endTime = sdf.parse(punchOutTimeStr);
+            if (startTime.after(normalStartTime)) {
+                comeLate = new Double(getHoursForLong(startTime.getTime() - normalStartTime.getTime())) > 7.5 ?
+                        7.5 : new Double(getHoursForLong(startTime.getTime() - normalStartTime.getTime()));
+            }
+            if (endTime.before(normalEndTime)) {
+                leaveEarly = new Double(getHoursForLong(normalEndTime.getTime() - endTime.getTime())) > 7.5 ?
+                        7.5 : new Double(getHoursForLong(normalEndTime.getTime() - endTime.getTime()));
+            }
+            abnormalDateMap.put("comeLate", comeLate);
+            abnormalDateMap.put("leaveEarly", leaveEarly);
+        }
+        return abnormalDateMap;
     }
 }

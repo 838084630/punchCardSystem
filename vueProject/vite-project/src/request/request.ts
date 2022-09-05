@@ -1,4 +1,3 @@
-import { SortUp } from "@element-plus/icons-vue";
 import axios from "axios";
 import Cookies from "js-cookie";
 const instance = axios.create({
@@ -10,6 +9,7 @@ const instance = axios.create({
 
 //拦截器
 instance.interceptors.request.use(config =>{
+    
     let token = Cookies.get('token')
     if(token){
         //如果config.headers不为空就等于自己，不然赋值为空对象

@@ -24,14 +24,14 @@ public interface UserMapper {
     Record getRecord(@Param("username") String username, @Param("date") String date);
 
 
-    long updateRecord(Integer id,LocalDateTime punchOutTime,Double leaveEarly);
+    long updateRecord(Integer id,LocalDateTime punchInTime,LocalDateTime punchOutTime,Double comeLate,Double leaveEarly);
 
-    long createRecord(String username,LocalDateTime punchInTime,Double comeLate);
+    long createRecord(String username,LocalDateTime punchInTime,LocalDateTime punchOutTime,Double comeLate,Double leaveEarly);
 //    long createRecord(@Param("username")String username,@Param("punchInTime")LocalDateTime punchInTime,@Param("comeLate")Double comeLate);
 
     List<Integer> getAbsenceRecord(@Param("username") String username, @Param("newDate") ArrayList<String> newDate);
 
-    long getDay(String day);
+    long getDay(String username, String day);
 
     @Select("select id,username,punch_in_time,punch_out_time from attendance.record r where (punch_in_time between #{timeFrom} and #{timeTo}) and username = #{username} order by punch_in_time;")
     List<Record> getRecordByMonth(String username,LocalDate timeFrom, LocalDate timeTo);

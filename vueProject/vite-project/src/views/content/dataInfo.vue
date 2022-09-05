@@ -20,7 +20,7 @@
         <template #default="scope">
           <p v-if="scope.row.comeLate!==null" class="errMessage">遅刻</p>
           <p v-if="scope.row.leaveEarly!==null" class="errMessage">早退</p>
-          <p v-if="scope.row.leaveEarly==null && scope.row.comeLate==null" class="succMessage">正常</p>
+          <!-- <p v-if="scope.row.leaveEarly==null && scope.row.comeLate==null" class="succMessage">正常</p> -->
         </template>
       </el-table-column>
       
@@ -48,6 +48,14 @@
         <el-time-select v-model="form.punchout" start="00:00" step="00:01" end="24:00" placeholder="Select time" />
         <!-- <el-input v-model="form.punchout" autocomplete="off"/> -->
         <p class="errMessage" v-if="messageFlgOut">退勤時間未入力</p>
+        <p class="errMessage" v-if="inputTimeCheck">退勤時間は出勤時間より大きくなければなりません</p>
+      </el-form-item>
+
+      <el-form-item v-if="form.comelate!=='' && form.comelate!==null" label="遅刻" :label-width="formLabelWidth">
+        <el-input v-model="form.comelate" readonly/>
+      </el-form-item>
+      <el-form-item v-if="form.leaveearly!=='' && form.leaveearly!==null" label="早退" :label-width="formLabelWidth">
+        <el-input v-model="form.leaveearly" readonly/>
       </el-form-item>
     </el-form>
     <template #footer>
@@ -56,6 +64,8 @@
         <el-button type="primary" @click="submit()">確定</el-button>
       </span>
     </template>
+
+
   </el-dialog>
 <!-- 個人情報についての出力データ確認画面 -->
   <el-dialog custom-class="reply" v-model="exportDialog" title="個人情報" width="500px">
@@ -80,6 +90,7 @@
       </span>
     </template>
   </el-dialog>
+
   <el-backtop :right="30" :bottom="30" />
 </template>
 
@@ -94,6 +105,7 @@ let router = useRouter();
 let username = Cookie.get('username') || ''
 let messageFlgIn = ref(false);
 let messageFlgOut = ref(false);
+let inputTimeCheck = ref(false);
 let dialogFormVisible = ref(false)
 let exportDialog = ref(false)
 const selectedMonth: any = ref('')
@@ -136,6 +148,7 @@ const displayMessage = () => {
   form.punchout = '';
   messageFlgIn.value = false;
   messageFlgOut.value = false;
+  inputTimeCheck.value = false;
 }
 
 const queryMonthDate = () => {
@@ -157,14 +170,13 @@ const queryMonthDate = () => {
   })
 }
 const handleEdit = (index: number, row: User) => {
-  // console.log(index, row)
   dialogFormVisible.value = true;
-  // form.punchin = row.punchInTime!==null?row.date+' '+row.punchInTime:'';
-  // form.punchout = row.punchOutTime!==null?row.date+' '+row.punchOutTime:'';
   form.id = row.id !== null ? row.id : '';
   form.date = row.date !== null ? row.date : '';
   form.punchin = row.punchInTime !== null ? row.punchInTime : '';
   form.punchout = row.punchOutTime !== null ? row.punchOutTime : '';
+  form.comelate = row.comeLate !== null ? String(row.comeLate) : '';
+  form.leaveearly = row.leaveEarly !== null ? String(row.leaveEarly) : '';
 
 }
 //本日はどの月に所属するかを判断するロジックA
@@ -210,8 +222,10 @@ const submit = () => {
   messageFlgIn.value = form.punchin === ''
   messageFlgOut.value = form.punchout === ''
   if (!messageFlgIn.value && !messageFlgOut.value) {
-
-
+    console.log(form.punchin);
+    console.log(form.punchout);
+    
+    if(form.punchin<form.punchout){
     let punchInTime = form.date + ' ' + form.punchin;
     let punchOutTime = form.date + ' ' + form.punchout;
     let record: any = {
@@ -220,8 +234,6 @@ const submit = () => {
       punchInTime: punchInTime,
       punchOutTime: punchOutTime
     }
-    console.log(record);
-
     punchCardApi(record).then(res => {
       if (res.code.value === 200) {
         ElMessage({
@@ -236,7 +248,10 @@ const submit = () => {
       }
       dialogFormVisible.value = false
     })
+  }else{
+    inputTimeCheck.value = true;
   }
+}
 }
 
  const exportRecord = () =>{
@@ -308,9 +323,9 @@ const submit = () => {
   font-size: 10px;
   margin: 0px;
 }
-.succMessage{
-  color: green;
-  font-size: 10px;
-  margin: 0px;
-}
+// .succMessage{
+//   color: green;
+//   font-size: 10px;
+//   margin: 0px;
+// }
 </style>

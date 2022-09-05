@@ -32,7 +32,7 @@ import { User, Key } from '@element-plus/icons-vue';
 import Cookie from 'js-cookie';
 import { useRouter } from 'vue-router';
 import { useStore } from 'vuex';
-
+import { getCurrentInstance } from 'vue'
 
 let router = useRouter();
 let store = useStore();
@@ -105,7 +105,14 @@ const loginFn = () => {
         // Cookie.set('token',res.data.tokenHead + res.data.token,{ expires: 7});
         Cookie.set('token', res.data.token, { expires: 7 });
         Cookie.set('username', ruleForm.value.username, { expires: 7 });
-        router.push('/homepage')
+        // let redirect = decodeURIComponent(router.currentRoute.value.path.params.redirect || '/');
+        let redirect = String(router.currentRoute.value.query.redirect);
+        if(redirect!==null){
+          router.push({path: redirect})
+        }else{
+          router.push('/homepage')
+        }
+        
       } else {
         open4()
         // location.reload();
