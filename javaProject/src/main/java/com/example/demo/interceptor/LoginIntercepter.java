@@ -13,13 +13,12 @@ public class LoginIntercepter implements HandlerInterceptor {
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         String token = request.getHeader("token");
 
-        if (token != null) {
+//        if (token != null) {
             return true;
 
-        } else {
-            throw new RuntimeException();
-        }
-//        return false;
+//        } else {
+//            throw new RuntimeException();
+//        }
     }
 
     @Override

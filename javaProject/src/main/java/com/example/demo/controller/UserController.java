@@ -70,4 +70,9 @@ public class UserController {
         return userService.getRecordByMonth(username,month);
     }
 
+    @GetMapping(value = "/test")
+    public String getResult(String username, String month){
+        return "success"+username+month;
+    }
+
 }

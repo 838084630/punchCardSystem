@@ -105,14 +105,14 @@ const loginFn = () => {
         // Cookie.set('token',res.data.tokenHead + res.data.token,{ expires: 7});
         Cookie.set('token', res.data.token, { expires: 7 });
         Cookie.set('username', ruleForm.value.username, { expires: 7 });
-        // let redirect = decodeURIComponent(router.currentRoute.value.path.params.redirect || '/');
         let redirect = String(router.currentRoute.value.query.redirect);
-        if(redirect!==null){
-          router.push({path: redirect})
-        }else{
-          router.push('/homepage')
-        }
+        console.log("------redirect------",typeof(redirect))
         
+        if(redirect == null|| redirect == 'undefined'){ 
+          router.push('/homepage')
+        }else{    
+          router.push({path: redirect})
+        }
       } else {
         open4()
         // location.reload();
