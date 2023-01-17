@@ -1,16 +1,28 @@
-# Vue 3 + TypeScript + Vite
+#勤怠システム初期化手順(ローカル)
+### description
+Vue 3 + TypeScript + Vite
+## Frontend
+#### 1.環境準備
+- node.js 14.18.1
+- npm 6.14.15
+- java 1.8  
+  
+#### 2.QuickStart  
+Vscodeをインストール、下記のコマンドを実行
+- `cd vite-project`
+- `npm install`
+- `npm run dev`
 
-This template should help get you started developing with Vue 3 and TypeScript in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
-
-## Recommended IDE Setup
-
-- [VS Code](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar)
-
-## Type Support For `.vue` Imports in TS
-
-Since TypeScript cannot handle type information for `.vue` imports, they are shimmed to be a generic Vue component type by default. In most cases this is fine if you don't really care about component prop types outside of templates. However, if you wish to get actual prop types in `.vue` imports (for example to get props validation when using manual `h(...)` calls), you can enable Volar's Take Over mode by following these steps:
-
-1. Run `Extensions: Show Built-in Extensions` from VS Code's command palette, look for `TypeScript and JavaScript Language Features`, then right click and select `Disable (Workspace)`. By default, Take Over mode will enable itself if the default TypeScript extension is disabled.
-2. Reload the VS Code window by running `Developer: Reload Window` from the command palette.
-
-You can learn more about Take Over mode [here](https://github.com/johnsoncodehk/volar/discussions/471).
+## Backend
+#### 1.環境準備
+- java 1.8 
+- postgresql  
+  ①インストール参照：（MacM1)https://blog.csdn.net/HelloYoungr/article/details/127988734  
+  ②create db (name:pcs) and schema (name:attendance)  
+  ③*.sql&DDLの導入(PATH:punchCardSystem/javaProject/src/main/resources/come/example/demo/sql)
+  
+#### 2.QuickStart  
+IntelliJ IDEAをインストールする
+- Run demoApplication
+   
+最後は起動した画面からログインする(user:admin pwd:123456)
